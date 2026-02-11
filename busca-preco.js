@@ -1,6 +1,4 @@
-O que funcionou pra mim (import xml de sites não funcionou tão bem) foi usar a https://brapi.dev/, ir em extesões > apps script, e colocar o código:
 
-```
 /**
  * Função mestre para investimentos (Ações e Criptos).
  * u/param {string} ticker Ex: "WEGE3", "BTC", "ETH".
@@ -59,6 +57,5 @@ function BRAPI_DADOS(ticker, tipo) {
     return "Erro de conexão";
   }
 }
-```
 
-Salva, volta pra planilha e aí é só puxar os dados fazendo =BRAPI_DADOS("WEGE3"; "preco") pra pegar o preço... Esse código tbm tem alteração(1d, 7d, etc...) e PL/EPS
+// Salva, volta pra planilha e aí é só puxar os dados fazendo =BRAPI_DADOS("WEGE3"; "preco") pra pegar o preço, lteração(1d, 7d, etc...) e PL/EPS
