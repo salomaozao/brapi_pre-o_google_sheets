@@ -1,0 +1,64 @@
+O que funcionou pra mim (import xml de sites não funcionou tão bem) foi usar a https://brapi.dev/, ir em extesões > apps script, e colocar o código:
+
+```
+/**
+ * Função mestre para investimentos (Ações e Criptos).
+ * u/param {string} ticker Ex: "WEGE3", "BTC", "ETH".
+ * u/param {string} tipo Ex: "preco", "var24h", "var7d", "var1mes", "pl", "lpa".
+ * u/customfunction
+ */
+function BRAPI_DADOS(ticker, tipo) {
+  if (!ticker) return "Ticker vazio";
+  var token = "SEU_TOKEN_DA_BRAPI_AQUI";
+  var t = ticker.toString().trim().toUpperCase();
+  var tipoDesejado = tipo.toLowerCase();
+  
+  // 1. Identifica se é Crypto ou Ação (BTC, ETH, SOL costumam ser consultados como crypto)
+  var isCrypto = ["BTC", "ETH", "SOL", "USDT", "ADA", "DOT"].includes(t);
+  var url = isCrypto 
+    ? "https://brapi.dev/api/v2/crypto?coin=" + t + "&currency=BRL&token=" + token
+    : "https://brapi.dev/api/quote/" + t + "?token=" + token + "&range=1mo&interval=1d";
+
+  try {
+    var response = UrlFetchApp.fetch(url, { "muteHttpExceptions": true });
+    if (response.getResponseCode() !== 200) return "Erro 404";
+    
+    var json = JSON.parse(response.getContentText());
+    var dados = isCrypto ? json.coins[0] : json.results[0];
+
+    switch(tipoDesejado) {
+      case "preco":
+        return dados.regularMarketPrice;
+      
+      case "var24h":
+        return (isCrypto ? dados.regularMarketChangePercent : dados.regularMarketChangePercent) / 100;
+      
+      case "var7d":
+        var hist7 = isCrypto ? null : dados.historicalDataPrice; // Brapi v2 crypto lida diferente com hist
+        if (!hist7 || hist7.length < 5) return "N/A"; 
+        return (dados.regularMarketPrice / hist7[0].close) - 1;
+
+      case "var1mes":
+        var hist1m = isCrypto ? null : dados.historicalDataPrice;
+        if (!hist1m || hist1m.length < 15) return "N/A";
+        return (dados.regularMarketPrice / hist1m[0].close) - 1;
+
+      case "pl": // Preço / Lucro (P/E Ratio)
+        return dados.priceEarnings || "N/A";
+
+      case "lpa": // Lucro por Ação (EPS)
+        return dados.earningsPerShare || "N/A";
+
+      case "nome":
+        return isCrypto ? dados.coinName : dados.longName;
+
+      default:
+        return "Tipo inválido";
+    }
+  } catch (e) {
+    return "Erro de conexão";
+  }
+}
+```
+
+Salva, volta pra planilha e aí é só puxar os dados fazendo =BRAPI_DADOS("WEGE3"; "preco") pra pegar o preço... Esse código tbm tem alteração(1d, 7d, etc...) e PL/EPS
